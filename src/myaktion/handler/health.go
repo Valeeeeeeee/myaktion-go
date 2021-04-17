@@ -9,6 +9,6 @@ import (
 
 func Health(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	io.WriteString(w, `{"alive: true}`)
+	io.WriteString(w, `{"alive": true}`)
 	log.Info("Successfully checked health")
 }

@@ -6,6 +6,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
+	"github.com/Valeeeeeeee/myaktion-go/src/myaktion/db"
 	"github.com/Valeeeeeeee/myaktion-go/src/myaktion/handler"
 	"github.com/gorilla/mux"
 )
@@ -23,6 +24,7 @@ func init() {
 }
 
 func main() {
+	defer db.Init()
 	log.Infoln("Starting My-Aktion API server")
 	router := mux.NewRouter()
 	router.HandleFunc("/health", handler.Health).Methods("GET")
