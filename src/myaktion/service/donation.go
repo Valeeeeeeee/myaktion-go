@@ -1,20 +1,20 @@
 package service
 
 import (
-	"errors"
-
 	log "github.com/sirupsen/logrus"
 
+	"github.com/Valeeeeeeee/myaktion-go/src/myaktion/db"
 	"github.com/Valeeeeeeee/myaktion-go/src/myaktion/model"
 )
 
-func AddDonation(id uint, donation *model.Donation) (*model.Campaign, error) {
-	if existingCampaign, err := campaignStore[id]; err {
-		existingCampaign.Donations = append(existingCampaign.Donations, *donation)
-		entry := log.WithField("ID", id)
-		entry.Info("Successfully added donation to campaign.")
-		entry.Tracef("Updated: %v", existingCampaign)
-		return existingCampaign, nil
+func AddDonation(id uint, donation *model.Donation) error {
+	donation.CampaignID = id
+	result := db.DB.Create(donation)
+	if result.Error != nil {
+		return result.Error
 	}
-	return nil, errors.New("campaign not found")
+	entry := log.WithField("ID", id)
+	entry.Info("Successfully added donation to campaign.")
+	entry.Tracef("Stored: %v", donation)
+	return nil
 }

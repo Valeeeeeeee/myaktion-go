@@ -12,3 +12,13 @@ type Campaign struct {
 	Donations          []Donation `gorm:"foreignKey:CampaignID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE" json:"donations"`
 	AmountDonatedSoFar float64    `gorm:"-"`
 }
+
+func (c *Campaign) AfterFind(tx *gorm.DB) (err error) {
+	var sum float64
+	result := tx.Model(&Donation{}).Select("ifnull(sum(amount),0)").Where("campaign_id = ?", c.ID).Scan(&sum)
+	if result.Error != nil {
+		return result.Error
+	}
+	c.AmountDonatedSoFar = sum
+	return nil
+}

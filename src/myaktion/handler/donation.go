@@ -23,13 +23,13 @@ func AddDonation(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	updatedCampaign, err := service.AddDonation(id, donation)
+	err = service.AddDonation(id, donation)
 	if err != nil {
 		log.Errorf("Error calling service AddDonation: %v", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	sendJson(w, *updatedCampaign)
+	sendJson(w, result{Message: "OK"})
 }
 
 func getDonationFromRequest(r *http.Request) (*model.Donation, error) {

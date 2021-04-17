@@ -4,19 +4,21 @@ import (
 	"errors"
 
 	log "github.com/sirupsen/logrus"
+	"gorm.io/gorm"
 
+	"github.com/Valeeeeeeee/myaktion-go/src/myaktion/db"
 	"github.com/Valeeeeeeee/myaktion-go/src/myaktion/model"
 )
 
 var (
-	campaignStore      = make(map[uint]*model.Campaign)
-	actCampaignID uint = 1
+//campaignStore = make(map[uint]*model.Campaign)
 )
 
 func CreateCampaign(campaign *model.Campaign) error {
-	campaign.ID = actCampaignID
-	campaignStore[actCampaignID] = campaign
-	actCampaignID += 1
+	result := db.DB.Create(campaign)
+	if result.Error != nil {
+		return result.Error
+	}
 	log.Infof("Successfully stored new campaign with ID %v in database.", campaign.ID)
 	log.Tracef("Stored: %v", campaign)
 	return nil
@@ -24,26 +26,28 @@ func CreateCampaign(campaign *model.Campaign) error {
 
 func GetCampaigns() ([]model.Campaign, error) {
 	var campaigns []model.Campaign
-	for _, campaign := range campaignStore {
-		campaigns = append(campaigns, *campaign)
+	result := db.DB.Preload("Donations").Find(&campaigns)
+	if result.Error != nil {
+		return nil, result.Error
 	}
 	log.Tracef("Retrieved: %v", campaigns)
 	return campaigns, nil
 }
 
 func GetCampaign(id uint) (*model.Campaign, error) {
-	for _, campaign := range campaignStore {
-		if campaign.ID == id {
-			log.Tracef("Retrieved campaign: %v", campaign)
-			return campaign, nil
-		}
+	campaign := new(model.Campaign)
+	result := db.DB.Preload("Donations").First(campaign, id)
+	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+		return nil, nil
 	}
-	log.Tracef("Could not find campaign with id %v", id)
-	return nil, nil
+	if result.Error != nil {
+		return nil, result.Error
+	}
+	log.Tracef("Retrieved: %v", campaign)
+	return campaign, nil
 }
 
 func UpdateCampaign(id uint, campaign *model.Campaign) (*model.Campaign, error) {
-	// TODO check if exists -> else there could be a problem with the counter
 	savedCampaign, err := GetCampaign(id)
 	if err != nil {
 		log.Errorf("An error occurred when getting campaign with ID %v", id)
@@ -54,10 +58,21 @@ func UpdateCampaign(id uint, campaign *model.Campaign) (*model.Campaign, error) 
 		return nil, nil
 	}
 	savedCampaign.Name = campaign.Name
-	savedCampaign.MinumumDonation = campaign.MinumumDonation
+	savedCampaign.MinimumDonation = campaign.MinimumDonation
 	savedCampaign.TargetAmount = campaign.TargetAmount
 	savedCampaign.Account = campaign.Account
 	savedCampaign.OrganizerName = campaign.OrganizerName
+	result := db.DB.Save(savedCampaign)
+	// result := db.DB.Model(&savedCampaign).Updates(campaign)
+	// result := db.DB.Model(&savedCampaign).Updates(map[string]interface{}{
+	// 	"name":             campaign.Name,
+	// 	"minimum_donation": campaign.MinimumDonation,
+	// 	"target_amount":    campaign.TargetAmount,
+	// 	// "account":          campaign.Account,
+	// 	"organizer_name": campaign.OrganizerName})
+	if result.Error != nil {
+		return nil, result.Error
+	}
 
 	entry := log.WithField("ID", id)
 	entry.Info("Successfully updated campaign.")
@@ -75,7 +90,11 @@ func DeleteCampaign(id uint) error {
 		log.Infof("No campaign exists with ID %v", id)
 		return errors.New("404 Campaign not found")
 	}
-	delete(campaignStore, id)
+	// delete(campaignStore, id)
+	result := db.DB.Delete(&campaign)
+	if result.Error != nil {
+		return result.Error
+	}
 	entry := log.WithField("ID", id)
 	entry.Info("Successfully deleted campaign.")
 	return nil
