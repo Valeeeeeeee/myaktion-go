@@ -1,7 +1,7 @@
 package model
 
 type Account struct {
-	IBAN       string `json:"number"`
-	Name       string `json:"name"`
-	NameOfBank string `json:"bankName"`
+	IBAN       string `gorm:"notNull;size:22" json:"number"`
+	Name       string `gorm:"notNull;size:60" json:"name"`
+	NameOfBank string `gorm:"notNull;size:40" json:"bankName"`
 }
